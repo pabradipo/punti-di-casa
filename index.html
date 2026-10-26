@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2D5BE3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Punti di casa">
+<title>Punti di casa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<style>
+:root{--bg:#EEF3FA;--card:#FFFFFF;--ink:#16223A;--mut:#5B6782;--line:#D8E0EE;--die:#2D5BE3;--pie:#1E9E57;--ok:#1F9D6A;--bad:#C93B3B;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1625;--card:#18223A;--ink:#EAF0FB;--mut:#9AA8C4;--line:#2A3755;--die:#7C9DFF;--pie:#4FD38A;--ok:#3CCB8F;--bad:#FF7A7A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1625;--card:#18223A;--ink:#EAF0FB;--mut:#9AA8C4;--line:#2A3755;--die:#7C9DFF;--pie:#4FD38A;--ok:#3CCB8F;--bad:#FF7A7A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Baloo 2",ui-rounded,"Segoe UI",system-ui,sans-serif;font-size:17px;line-height:1.35}
+main{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+.kids{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.kids button{font:inherit;font-weight:800;font-size:22px;padding:10px;border-radius:16px;border:2px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}
+.kids button[aria-pressed="true"]{color:#fff;border-color:transparent;background:var(--c)}
+.hero{background:var(--c);color:#fff;border-radius:24px;padding:18px 20px;margin-bottom:18px}
+.hero .row{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.big{font-size:64px;font-weight:800;line-height:.9}
+.lab{font-size:15px;opacity:.9}
+.goal{text-align:right}
+.goal .n{font-size:28px;font-weight:800;line-height:1}
+.bar{height:16px;background:rgba(255,255,255,.3);border-radius:99px;margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:#fff;border-radius:99px;transition:width .5s}
+.done{margin-top:10px;font-weight:700}
+h2{font-size:20px;margin:22px 0 8px}
+.list{display:grid;gap:6px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.item b{flex:none;min-width:44px;text-align:center;border-radius:99px;padding:2px 10px;font-weight:800}
+.earn b{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.spend b{background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+.parent .item{cursor:pointer}
+.parent .item:active{transform:scale(.98)}
+.item:disabled{opacity:.45}
+.log{font-size:15px;color:var(--mut)}
+.log div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+.log .p{font-weight:700}.log .plus{color:var(--ok)}.log .minus{color:var(--bad)}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);display:flex;gap:8px;justify-content:center}
+.btn{font:inherit;font-weight:700;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);padding:8px 16px;cursor:pointer}
+.btn.main{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hint{font-size:14px;color:var(--mut);margin:4px 0 0}
+dialog{border:none;border-radius:20px;padding:22px;background:var(--card);color:var(--ink);max-width:320px;width:90%}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog input{font:inherit;font-size:28px;letter-spacing:.3em;text-align:center;width:100%;padding:8px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);margin:10px 0}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+.toast.on{opacity:1}
+a{color:var(--c)}
+:focus-visible{outline:3px solid var(--c);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main id="app">
+  <div class="kids" role="tablist">
+    <button data-k="diego" style="--c:var(--die)">Diego</button>
+    <button data-k="pietro" style="--c:var(--pie)">Pietro</button>
+  </div>
+  <section class="hero">
+    <div class="row">
+      <div><div class="big" id="spend">0</div><div class="lab">punti da spendere</div></div>
+      <div class="goal"><div class="n" id="tot">0 / 0</div><div class="lab" id="goalname">verso il premio grande</div></div>
+    </div>
+    <div class="bar"><i id="bar" style="width:0"></i></div>
+    <div class="done" id="done" hidden></div>
+  </section>
+  <p class="hint" id="mode">Solo mamma e papà possono aggiungere o togliere punti.</p>
+  <h2>Come si guadagnano</h2>
+  <div class="list earn" id="earn"></div>
+  <h2>Cosa puoi prendere</h2>
+  <div class="list spend" id="spendList"></div>
+  <h2>Ultimi movimenti</h2>
+  <div class="log" id="log"></div>
+  <p class="hint" id="rules"></p>
+  <p class="hint" id="status"></p>
+</main>
+<div class="bottom">
+  <button class="btn" id="refresh">Aggiorna</button>
+  <button class="btn" id="undo" hidden>Annulla ultimo</button>
+  <button class="btn main" id="lock">Modalità genitori</button>
+</div>
+<dialog id="pinDlg">
+  <form method="dialog" id="pinForm">
+    <div style="font-weight:800;font-size:20px">PIN genitori</div>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="PIN">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" value="cancel" type="button" id="pinCancel">Annulla</button>
+      <button class="btn main" value="ok" type="submit">Entra</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+<script>
+// URL della web app di Apps Script (finisce con /exec)
+const API_URL = "https://script.google.com/macros/s/AKfycbyK7XSG349kqrSzf2EH4X8pS6cy2LxhBpZPTs9EBo7baEeP7FUAjxTqSpJqAiaBMsKntA/exec";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1_iLYdAvobId7kuexNzg24pahExUjGioLSBj7hJmT110/edit";
+const RULES_URL = "regole.pdf";
+const NAMES = {diego:"Diego", pietro:"Pietro"};
+const C = {diego:"var(--die)", pietro:"var(--pie)"};
+let ACT = [], REW = [], GOALS = {}, MOV = [];
+let kid = "diego", parent = false, pin = "", busy = false, lockTimer = null, loaded = false;
+try { const k = localStorage.getItem("kid"); if (NAMES[k]) kid = k; } catch(_) {}
+const $ = id => document.getElementById(id);
+const num = v => { const n = Number(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : 0; };
+
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2400)}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+function setStatus(t){ $("status").textContent = t || ""; }
+
+function apply(d){
+  ACT = (d.attivita||[]).filter(x=>x[1]).map(x=>({who:String(x[0]||"Entrambi").trim(), t:String(x[1]), p:num(x[2])}));
+  REW = (d.premi||[]).filter(x=>x[0]).map(x=>({t:String(x[0]), p:num(x[1])}));
+  GOALS = {};
+  (d.traguardi||[]).forEach(x=>{ if(x[0]) GOALS[String(x[0]).trim().toLowerCase()] = {goal:String(x[1]||"il premio grande"), target:num(x[2])||100}; });
+  MOV = (d.movimenti||[]).filter(x=>x[1]).map(x=>({kid:String(x[1]).trim().toLowerCase(), voce:String(x[2]||""), p:num(x[3]), tipo:String(x[4]||"").trim()}));
+  loaded = true;
+}
+
+function balances(k){
+  let spend = 0, total = 0;
+  for (const m of MOV) {
+    if (m.kid !== k) continue;
+    if (m.tipo === "Guadagno") { spend += m.p; total += m.p; }
+    else if (m.tipo === "Spesa") spend += m.p;
+    else if (m.tipo === "Premio grande") total += m.p;
+  }
+  return {spend, total};
+}
+function acts(k){ return ACT.filter(a => a.who.toLowerCase() === "entrambi" || a.who.toLowerCase() === k); }
+
+function render(){
+  const main = document.querySelector("main");
+  main.style.setProperty("--c", C[kid]);
+  document.querySelector('meta[name="theme-color"]').content = kid === "diego" ? "#2D5BE3" : "#1E9E57";
+  document.querySelectorAll(".kids button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === kid));
+  const {spend, total} = balances(kid);
+  const g = GOALS[kid] || {goal:"il premio grande", target:100};
+  $("spend").textContent = loaded ? spend : "…";
+  $("tot").textContent = loaded ? total + " / " + g.target : "…";
+  $("goalname").textContent = "verso " + g.goal;
+  $("bar").style.width = Math.min(100, g.target ? total / g.target * 100 : 0) + "%";
+  const reached = loaded && total >= g.target;
+  $("done").hidden = !reached;
+  $("done").innerHTML = reached ? "Traguardo raggiunto! " + (parent ? '<button class="btn" id="claim" style="margin-left:6px">Premio consegnato</button>' : "") : "";
+  if (reached && parent) $("claim").onclick = claim;
+  main.classList.toggle("parent", parent);
+  $("mode").textContent = parent ? "Modalità genitori: tocca una voce per aggiungere o spendere punti." : "Solo mamma e papà possono aggiungere o togliere punti.";
+  const dis = !parent || busy;
+  $("earn").innerHTML = acts(kid).map((a,i)=>`<button class="item" data-e="${i}" ${dis?"disabled":""}><span>${esc(a.t)}</span><b>+${a.p}</b></button>`).join("");
+  $("spendList").innerHTML = REW.map((r,i)=>`<button class="item" data-s="${i}" ${dis || spend < r.p ? "disabled" : ""}><span>${esc(r.t)}</span><b>${r.p}</b></button>`).join("");
+  const mine = MOV.filter(m => m.kid === kid).slice(-10).reverse();
+  $("log").innerHTML = mine.length ? mine.map(m=>`<div><span>${esc(m.voce)}</span><span class="p ${m.p>0?"plus":"minus"}">${m.p>0?"+":""}${m.p}</span></div>`).join("") : "<div>Ancora nessun punto. Si comincia!</div>";
+  $("undo").hidden = !parent || !MOV.length;
+  $("lock").textContent = parent ? "Esci" : "Modalità genitori";
+  $("rules").innerHTML = `<a href="${RULES_URL}" target="_blank" rel="noopener">Leggi le regole complete</a>` + (parent ? ` · <a href="${SHEET_URL}" target="_blank" rel="noopener">Apri il foglio Google</a>` : "");
+}
+
+async function load(){
+  try {
+    const r = await fetch(API_URL, {cache:"no-store"});
+    apply(await r.json()); setStatus("");
+  } catch(e) { setStatus("Non riesco a leggere il foglio. Controlla la connessione e riprova."); }
+  render();
+}
+
+async function post(body){
+  const r = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({...body, pin})});
+  return r.json();
+}
+
+const ERR = {pin:"PIN sbagliato", punti:"Punti non sufficienti", dati:"Dati non validi"};
+
+async function send(body, okMsg){
+  if (busy) return;
+  busy = true; render();
+  try {
+    const d = await post(body);
+    if (d.ok) { apply(d); toast(okMsg); }
+    else { toast(ERR[d.error] || "Operazione non riuscita"); if (d.error === "pin") { parent = false; pin = ""; } }
+  } catch(e) { toast("Non so se è stato salvato: ricarico il foglio"); await load(); }
+  busy = false; bump(); render();
+}
+
+function earn(i){ const a = acts(kid)[i]; if (a) send({action:"add", kid:NAMES[kid], voce:a.t, p:a.p, tipo:"Guadagno"}, `+${a.p} a ${NAMES[kid]}`); }
+function spend(i){
+  const r = REW[i]; if (!r) return;
+  if (balances(kid).spend < r.p) return toast("Punti non sufficienti");
+  send({action:"add", kid:NAMES[kid], voce:r.t, p:-r.p, tipo:"Spesa"}, `${r.t}: −${r.p}`);
+}
+function claim(){ const g = GOALS[kid]; send({action:"add", kid:NAMES[kid], voce:"Premio grande consegnato", p:-g.target, tipo:"Premio grande"}, "Premio consegnato!"); }
+function undo(){ send({action:"undo"}, "Ultimo movimento annullato"); }
+
+function bump(){ clearTimeout(lockTimer); lockTimer = setTimeout(()=>{parent=false; pin=""; render()}, 180000); }
+
+document.querySelector(".kids").onclick = e => { const b=e.target.closest("button"); if(b){kid=b.dataset.k; try{localStorage.setItem("kid",kid)}catch(_){} render()} };
+$("earn").onclick = e => { const b=e.target.closest("[data-e]"); if(b && parent) earn(+b.dataset.e) };
+$("spendList").onclick = e => { const b=e.target.closest("[data-s]"); if(b && parent) spend(+b.dataset.s) };
+$("undo").onclick = undo;
+$("refresh").onclick = () => { toast("Aggiorno…"); load(); };
+$("lock").onclick = () => {
+  if (parent) { parent=false; pin=""; render(); return; }
+  $("pin").value = ""; $("pinDlg").showModal(); $("pin").focus();
+};
+$("pinCancel").onclick = () => $("pinDlg").close();
+$("pinForm").onsubmit = async e => {
+  e.preventDefault();
+  pin = $("pin").value.trim();
+  try {
+    const d = await post({action:"check"});
+    if (!d.ok) { pin=""; $("pin").value=""; return toast("PIN sbagliato (dopo 5 errori si blocca per 10 minuti)"); }
+  } catch(_) { pin=""; return toast("Non riesco a verificare il PIN, riprova"); }
+  $("pinDlg").close(); parent = true; bump(); render();
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden && !busy) load(); }, 60000);
+
+render();
+setStatus("Carico i punti…");
+load();
+</script>
+</body>
+</html>
