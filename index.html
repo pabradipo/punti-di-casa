@@ -35,6 +35,7 @@ h2{font-size:20px;margin:22px 0 8px}
 .item b{flex:none;min-width:44px;text-align:center;border-radius:99px;padding:2px 10px;font-weight:800}
 .earn b{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
 .spend b{background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+.malus b{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .parent .item{cursor:pointer}
 .parent .item:active{transform:scale(.98)}
 .item:disabled{opacity:.45}
@@ -74,6 +75,9 @@ a{color:var(--c)}
   <div class="list earn" id="earn"></div>
   <h2>Cosa puoi prendere</h2>
   <div class="list spend" id="spendList"></div>
+  <h2>Malus</h2>
+  <p class="hint">Tolgono punti solo dal salvadanaio piccolo. Il salvadanaio grande non perde mai punti.</p>
+  <div class="list malus" id="malusList"></div>
   <h2>Ultimi movimenti</h2>
   <div class="log" id="log"></div>
   <p class="hint" id="rules"></p>
@@ -102,7 +106,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/1_iLYdAvobId7kuexNzg24
 const RULES_URL = "regole.html";
 const NAMES = {diego:"Diego", pietro:"Pietro"};
 const C = {diego:"var(--die)", pietro:"var(--pie)"};
-let ACT = [], REW = [], GOALS = {}, MOV = [];
+let ACT = [], REW = [], MAL = [], GOALS = {}, MOV = [];
 let kid = "diego", parent = false, pin = "", busy = false, lockTimer = null, loaded = false;
 try { const k = localStorage.getItem("kid"); if (NAMES[k]) kid = k; } catch(_) {}
 const $ = id => document.getElementById(id);
@@ -115,6 +119,7 @@ function setStatus(t){ $("status").textContent = t || ""; }
 function apply(d){
   ACT = (d.attivita||[]).filter(x=>x[1]).map(x=>({who:String(x[0]||"Entrambi").trim(), t:String(x[1]), p:num(x[2])}));
   REW = (d.premi||[]).filter(x=>x[0]).map(x=>({t:String(x[0]), p:num(x[1])}));
+  MAL = (d.malus||[]).filter(x=>x[1]).map(x=>({who:String(x[0]||"Entrambi").trim(), t:String(x[1]), p:Math.abs(num(x[2]))}));
   GOALS = {};
   (d.traguardi||[]).forEach(x=>{ if(x[0]) GOALS[String(x[0]).trim().toLowerCase()] = {goal:String(x[1]||"il premio grande"), target:num(x[2])||100}; });
   MOV = (d.movimenti||[]).filter(x=>x[1]).map(x=>({kid:String(x[1]).trim().toLowerCase(), voce:String(x[2]||""), p:num(x[3]), tipo:String(x[4]||"").trim()}));
@@ -126,11 +131,12 @@ function balances(k){
   for (const m of MOV) {
     if (m.kid !== k) continue;
     if (m.tipo === "Guadagno") { spend += m.p; total += m.p; }
-    else if (m.tipo === "Spesa") spend += m.p;
+    else if (m.tipo === "Spesa" || m.tipo === "Malus") spend += m.p;
     else if (m.tipo === "Premio grande") total += m.p;
   }
   return {spend, total};
 }
+function mals(k){ return MAL.filter(a => a.who.toLowerCase() === "entrambi" || a.who.toLowerCase() === k); }
 function acts(k){ return ACT.filter(a => a.who.toLowerCase() === "entrambi" || a.who.toLowerCase() === k); }
 
 function render(){
@@ -153,6 +159,7 @@ function render(){
   const dis = !parent || busy;
   $("earn").innerHTML = acts(kid).map((a,i)=>`<button class="item" data-e="${i}" ${dis?"disabled":""}><span>${esc(a.t)}</span><b>+${a.p}</b></button>`).join("");
   $("spendList").innerHTML = REW.map((r,i)=>`<button class="item" data-s="${i}" ${dis || spend < r.p ? "disabled" : ""}><span>${esc(r.t)}</span><b>${r.p}</b></button>`).join("");
+  $("malusList").innerHTML = mals(kid).map((a,i)=>`<button class="item" data-m="${i}" ${dis?"disabled":""}><span>${esc(a.t)}</span><b>−${a.p}</b></button>`).join("") || '<p class="hint">Nessun malus nel foglio.</p>';
   const mine = MOV.filter(m => m.kid === kid).slice(-10).reverse();
   $("log").innerHTML = mine.length ? mine.map(m=>`<div><span>${esc(m.voce)}</span><span class="p ${m.p>0?"plus":"minus"}">${m.p>0?"+":""}${m.p}</span></div>`).join("") : "<div>Ancora nessun punto. Si comincia!</div>";
   $("undo").hidden = !parent || !MOV.length;
@@ -187,6 +194,7 @@ async function send(body, okMsg){
 }
 
 function earn(i){ const a = acts(kid)[i]; if (a) send({action:"add", kid:NAMES[kid], voce:a.t, p:a.p, tipo:"Guadagno"}, `+${a.p} a ${NAMES[kid]}`); }
+function malus(i){ const a = mals(kid)[i]; if (a) send({action:"add", kid:NAMES[kid], voce:"Malus: " + a.t, p:-a.p, tipo:"Malus"}, `Malus a ${NAMES[kid]}: −${a.p}`); }
 function spend(i){
   const r = REW[i]; if (!r) return;
   if (balances(kid).spend < r.p) return toast("Punti non sufficienti");
@@ -199,6 +207,7 @@ function bump(){ clearTimeout(lockTimer); lockTimer = setTimeout(()=>{parent=fal
 
 document.querySelector(".kids").onclick = e => { const b=e.target.closest("button"); if(b){kid=b.dataset.k; try{localStorage.setItem("kid",kid)}catch(_){} render()} };
 $("earn").onclick = e => { const b=e.target.closest("[data-e]"); if(b && parent) earn(+b.dataset.e) };
+$("malusList").onclick = e => { const b=e.target.closest("[data-m]"); if(b && parent) malus(+b.dataset.m) };
 $("spendList").onclick = e => { const b=e.target.closest("[data-s]"); if(b && parent) spend(+b.dataset.s) };
 $("undo").onclick = undo;
 $("refresh").onclick = () => { toast("Aggiorno…"); load(); };
