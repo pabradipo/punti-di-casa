@@ -38,7 +38,12 @@ h2{font-size:20px;margin:22px 0 8px}
 .malus b{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .parent .item{cursor:pointer}
 .parent .item:active{transform:scale(.98)}
-.item:disabled{opacity:.45}
+.item:disabled{cursor:default}
+.item.off{opacity:.45}
+.spend .item.can{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card));font-weight:700;box-shadow:0 2px 10px color-mix(in srgb,var(--c) 30%,transparent)}
+.spend .item.can b{background:var(--c);color:#fff}
+.spend .item small{display:block;font-size:13px;font-weight:600;color:var(--mut)}
+.spend .item.can small{color:var(--c)}
 .log{font-size:15px;color:var(--mut)}
 .log div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
 .log .p{font-weight:700}.log .plus{color:var(--ok)}.log .minus{color:var(--bad)}
@@ -158,7 +163,7 @@ function render(){
   $("mode").textContent = parent ? "Modalità genitori: tocca una voce per aggiungere o spendere punti." : "Solo mamma e papà possono aggiungere o togliere punti.";
   const dis = !parent || busy;
   $("earn").innerHTML = acts(kid).map((a,i)=>`<button class="item" data-e="${i}" ${dis?"disabled":""}><span>${esc(a.t)}</span><b>+${a.p}</b></button>`).join("");
-  $("spendList").innerHTML = REW.map((r,i)=>`<button class="item" data-s="${i}" ${dis || spend < r.p ? "disabled" : ""}><span>${esc(r.t)}</span><b>${r.p}</b></button>`).join("");
+  $("spendList").innerHTML = REW.map((r,i)=>{ const ok = loaded && spend >= r.p; const note = ok ? "Puoi prenderlo!" : (loaded ? "Ne mancano " + (r.p - spend) : ""); return `<button class="item ${ok?"can":"off"}" data-s="${i}" ${dis || !ok ? "disabled" : ""}><span>${esc(r.t)}<small>${note}</small></span><b>${r.p}</b></button>`; }).join("");
   $("malusList").innerHTML = mals(kid).map((a,i)=>`<button class="item" data-m="${i}" ${dis?"disabled":""}><span>${esc(a.t)}</span><b>−${a.p}</b></button>`).join("") || '<p class="hint">Nessun malus nel foglio.</p>';
   const mine = MOV.filter(m => m.kid === kid).slice(-10).reverse();
   $("log").innerHTML = mine.length ? mine.map(m=>`<div><span>${esc(m.voce)}</span><span class="p ${m.p>0?"plus":"minus"}">${m.p>0?"+":""}${m.p}</span></div>`).join("") : "<div>Ancora nessun punto. Si comincia!</div>";
